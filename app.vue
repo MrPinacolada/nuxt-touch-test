@@ -38,20 +38,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref } from 'vue';
 
 // Хранение информации о последнем действии и текущем индексе карточки
-const lastGesture = ref<string>("");
+const lastGesture = ref<string>('');
 const currentIndex = ref<number>(0);
 const cards = ref<{ title: string; description: string }[]>([
-  { title: "Карточка 1", description: "Описание карточки 1" },
-  { title: "Карточка 2", description: "Описание карточки 2" },
-  { title: "Карточка 3", description: "Описание карточки 3" },
+  { title: 'Карточка 1', description: 'Описание карточки 1' },
+  { title: 'Карточка 2', description: 'Описание карточки 2' },
+  { title: 'Карточка 3', description: 'Описание карточки 3' },
 ]);
 
 // Обработчик свайпа влево
 const swipeLeftHandler = () => {
-  lastGesture.value = "Свайп влево";
+  lastGesture.value = 'Свайп влево';
   if (currentIndex.value < cards.value.length - 1) {
     currentIndex.value++;
   }
@@ -59,7 +59,7 @@ const swipeLeftHandler = () => {
 
 // Обработчик свайпа вправо
 const swipeRightHandler = () => {
-  lastGesture.value = "Свайп вправо";
+  lastGesture.value = 'Свайп вправо';
   if (currentIndex.value > 0) {
     currentIndex.value--;
   }
@@ -67,46 +67,47 @@ const swipeRightHandler = () => {
 
 // Обработчик тапов
 const tapHandler = () => {
-  lastGesture.value = "Тап";
+  lastGesture.value = 'Тап';
 };
 
 // Обработчик долгого тапа
 const longTapHandler = () => {
-  lastGesture.value = "Долгий тап";
+  lastGesture.value = 'Долгий тап';
 };
 
 // Обработчик начала нажатия (press)
 const pressHandler = () => {
-  lastGesture.value = "Нажатие";
+  lastGesture.value = 'Нажатие';
 };
 
 // Обработчик отпускания (release)
 const releaseHandler = () => {
-  lastGesture.value = "Отпускание";
+  lastGesture.value = 'Отпускание';
 };
 
 // Обработчик перетаскивания (drag)
 const dragHandler = () => {
-  lastGesture.value = "Перетаскивание";
+  lastGesture.value = 'Перетаскивание';
 };
 
 // Анимация появления
 const beforeEnter = (el: HTMLElement) => {
-  el.style.transform = "translateX(100%)"; // Изначальное положение за пределами экрана
+  el.style.transform = 'translateX(100%)'; // Изначальное положение за пределами экрана
+  el.style.transition = 'none'; // Без анимации перед анимацией входа
 };
 
 // Анимация перемещения
 const enter = (el: HTMLElement, done: () => void) => {
   el.offsetHeight; // Принудительное перерисовывание
-  el.style.transition = "transform 0.5s ease-out";
-  el.style.transform = "translateX(0)";
+  el.style.transition = 'transform 0.5s ease-out'; // Плавное движение
+  el.style.transform = 'translateX(0)';
   done();
 };
 
 // Анимация исчезновения
 const leave = (el: HTMLElement, done: () => void) => {
-  el.style.transition = "transform 0.5s ease-in";
-  el.style.transform = "translateX(-100%)"; // Сдвигаем карточку за экран
+  el.style.transition = 'transform 0.5s ease-in'; // Плавный исход
+  el.style.transform = 'translateX(-100%)'; // Сдвигаем карточку за экран
   done();
 };
 </script>
@@ -118,8 +119,6 @@ const leave = (el: HTMLElement, done: () => void) => {
   align-items: center;
   justify-content: center;
   height: 100vh;
-  max-width: 100dvw;
-  overflow: hidden;
   padding: 20px;
   box-sizing: border-box;
   background-color: #f4f4f9;
@@ -150,7 +149,7 @@ const leave = (el: HTMLElement, done: () => void) => {
   align-items: center;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition: transform 0.5s ease, opacity 0.5s ease;
   opacity: 0.9;
 }
 
