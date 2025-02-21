@@ -1,27 +1,36 @@
 <template>
   <div class="page-container">
-    <h1>Свайпни карточки</h1>
+    <h1>Свайпни или тапни карточку</h1>
 
-    <!-- Контейнер для свайпа блоков -->
+    <!-- Контейнер для свайпабельных карточек с анимацией -->
     <div class="swipe-container">
-      <div
-        v-for="(card, index) in cards"
-        :key="index"
-        class="swipe-card"
-        :class="{ active: currentIndex === index }"
-        v-touch:swipe.left="swipeLeftHandler(index)"
-        v-touch:swipe.right="swipeRightHandler(index)"
-        v-touch:press="pressHandler"
-        v-touch:longtap="longTapHandler"
+      <transition
+        name="card-swipe"
+        @before-enter="beforeEnter"
+        @enter="enter"
+        @leave="leave"
       >
-        <div class="card-content">
-          <h3>{{ card.title }}</h3>
-          <p>{{ card.description }}</p>
+        <!-- Показываем только текущую карточку -->
+        <div
+          class="swipe-card"
+          :key="currentIndex"
+          v-touch:swipe.left="swipeLeftHandler"
+          v-touch:swipe.right="swipeRightHandler"
+          v-touch:tap="tapHandler"
+          v-touch:longtap="longTapHandler"
+          v-touch:press="pressHandler"
+          v-touch:release="releaseHandler"
+          v-touch:drag="dragHandler"
+        >
+          <div class="card-content">
+            <h3>{{ cards[currentIndex].title }}</h3>
+            <p>{{ cards[currentIndex].description }}</p>
+          </div>
         </div>
-      </div>
+      </transition>
     </div>
 
-    <!-- Сообщение о последнем жесте -->
+    <!-- Сообщение о последнем действии -->
     <div v-if="lastGesture" class="gesture-info">
       <p>Последний жест: {{ lastGesture }}</p>
     </div>
@@ -29,37 +38,76 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref } from "vue";
 
-const lastGesture = ref<string>(''); // Хранит последний жест
-const currentIndex = ref<number>(0); // Индекс текущей карточки
-const cards = ref<{ title: string, description: string }[]>([
-  { title: 'Карточка 1', description: 'Описание карточки 1' },
-  { title: 'Карточка 2', description: 'Описание карточки 2' },
-  { title: 'Карточка 3', description: 'Описание карточки 3' },
+// Хранение информации о последнем действии и текущем индексе карточки
+const lastGesture = ref<string>("");
+const currentIndex = ref<number>(0);
+const cards = ref<{ title: string; description: string }[]>([
+  { title: "Карточка 1", description: "Описание карточки 1" },
+  { title: "Карточка 2", description: "Описание карточки 2" },
+  { title: "Карточка 3", description: "Описание карточки 3" },
 ]);
 
-// Обработчики жестов
-const swipeLeftHandler = (index: number) => {
-  if (index < cards.value.length - 1) {
+// Обработчик свайпа влево
+const swipeLeftHandler = () => {
+  lastGesture.value = "Свайп влево";
+  if (currentIndex.value < cards.value.length - 1) {
     currentIndex.value++;
-    lastGesture.value = 'Свайп влево';
   }
 };
 
-const swipeRightHandler = (index: number) => {
-  if (index > 0) {
+// Обработчик свайпа вправо
+const swipeRightHandler = () => {
+  lastGesture.value = "Свайп вправо";
+  if (currentIndex.value > 0) {
     currentIndex.value--;
-    lastGesture.value = 'Свайп вправо';
   }
 };
 
-const pressHandler = () => {
-  lastGesture.value = 'Нажатие';
+// Обработчик тапов
+const tapHandler = () => {
+  lastGesture.value = "Тап";
 };
 
+// Обработчик долгого тапа
 const longTapHandler = () => {
-  lastGesture.value = 'Долгое нажатие';
+  lastGesture.value = "Долгий тап";
+};
+
+// Обработчик начала нажатия (press)
+const pressHandler = () => {
+  lastGesture.value = "Нажатие";
+};
+
+// Обработчик отпускания (release)
+const releaseHandler = () => {
+  lastGesture.value = "Отпускание";
+};
+
+// Обработчик перетаскивания (drag)
+const dragHandler = () => {
+  lastGesture.value = "Перетаскивание";
+};
+
+// Анимация появления
+const beforeEnter = (el: HTMLElement) => {
+  el.style.transform = "translateX(100%)"; // Изначальное положение за пределами экрана
+};
+
+// Анимация перемещения
+const enter = (el: HTMLElement, done: () => void) => {
+  el.offsetHeight; // Принудительное перерисовывание
+  el.style.transition = "transform 0.5s ease-out";
+  el.style.transform = "translateX(0)";
+  done();
+};
+
+// Анимация исчезновения
+const leave = (el: HTMLElement, done: () => void) => {
+  el.style.transition = "transform 0.5s ease-in";
+  el.style.transform = "translateX(-100%)"; // Сдвигаем карточку за экран
+  done();
 };
 </script>
 
@@ -70,33 +118,31 @@ const longTapHandler = () => {
   align-items: center;
   justify-content: center;
   height: 100vh;
+  max-width: 100dvw;
+  overflow: hidden;
   padding: 20px;
   box-sizing: border-box;
   background-color: #f4f4f9;
   font-family: Arial, sans-serif;
 }
 
-h1 {
-  font-size: 24px;
-  margin-bottom: 20px;
-}
-
 .swipe-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   width: 100%;
-  height: 80%;
+  max-width: 400px;
+  height: 300px;
   overflow: hidden;
   position: relative;
 }
 
 .swipe-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   width: 100%;
   max-width: 400px;
-  height: 200px;
-  margin: 10px 0;
+  height: 100%;
   background-color: #3498db;
   color: white;
   display: flex;
@@ -104,24 +150,18 @@ h1 {
   align-items: center;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  opacity: 0.5;
-  transition: opacity 0.3s ease, transform 0.3s ease;
-  transform: translateX(0); /* По умолчанию карточки не двигаются */
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  opacity: 0.9;
 }
 
-.swipe-card.active {
-  opacity: 1;
-  transform: scale(1.05);
+.card-content {
+  text-align: center;
 }
 
 .gesture-info {
   margin-top: 20px;
   font-size: 16px;
   color: #333;
-}
-
-.card-content {
-  text-align: center;
 }
 
 @media (max-width: 600px) {
@@ -132,5 +172,16 @@ h1 {
     max-width: 90%;
     height: 180px;
   }
+}
+
+/* Плавные переходы для карт */
+.card-swipe-enter-active,
+.card-swipe-leave-active {
+  transition: transform 0.5s ease-out;
+}
+
+.card-swipe-enter, .card-swipe-leave-to /* .card-swipe-leave-active in <2.1.8 */ {
+  transform: translateX(100%);
+  opacity: 0;
 }
 </style>
