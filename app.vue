@@ -8,7 +8,9 @@
         v-for="(card, index) in cards.slice(1)"
         :key="card.title"
         class="card-back"
-        :style="{ transform: `scale(${0.9 - index * 0.05}) translateY(${index * 10}px)` }"
+        :style="{
+          transform: `scale(${0.9 - index * 0.05}) translateY(${index * 10}px)`,
+        }"
       ></div>
 
       <!-- Основная активная карточка -->
@@ -37,7 +39,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref } from "vue";
 
 const card = ref<HTMLElement | null>(null);
 const startPos = ref({ x: 0, y: 0 });
@@ -46,21 +48,27 @@ const rotation = ref(0);
 const isDragging = ref(false);
 
 const cards = ref([
-  { title: 'Карточка 1', description: 'Описание 1' },
-  { title: 'Карточка 2', description: 'Описание 2' },
-  { title: 'Карточка 3', description: 'Описание 3' },
+  { title: "Карточка 1", description: "Описание 1" },
+  { title: "Карточка 2", description: "Описание 2" },
+  { title: "Карточка 3", description: "Описание 3" },
 ]);
 
 const startDrag = (event: TouchEvent) => {
   isDragging.value = true;
   const touch = event.touches[0];
-  startPos.value = { x: touch.clientX - position.value.x, y: touch.clientY - position.value.y };
+  startPos.value = {
+    x: touch.clientX - position.value.x,
+    y: touch.clientY - position.value.y,
+  };
 };
 
 const drag = (event: TouchEvent) => {
   if (!isDragging.value) return;
   const touch = event.touches[0];
-  position.value = { x: touch.clientX - startPos.value.x, y: touch.clientY - startPos.value.y };
+  position.value = {
+    x: touch.clientX - startPos.value.x,
+    y: touch.clientY - startPos.value.y,
+  };
   rotation.value = position.value.x * 0.05;
   updateCardColor();
 };
@@ -123,28 +131,28 @@ const updateCardColor = () => {
   cardColor.value = `rgb(${red}, ${255 - red}, ${blue})`;
 };
 
-const cardColor = ref('rgb(52, 152, 219)');
+const cardColor = ref("rgb(52, 152, 219)");
 
 // Функция обработки свайпа
-const swipeCard = (direction: 'left' | 'right' | 'up' | 'down') => {
+const swipeCard = (direction: "left" | "right" | "up" | "down") => {
   const screenWidth = window.innerWidth;
   const screenHeight = window.innerHeight;
   const swipeDistance = 300; // Насколько далеко улетает карточка
 
   switch (direction) {
-    case 'left':
+    case "left":
       position.value = { x: -swipeDistance, y: 0 };
       rotation.value = -30;
       break;
-    case 'right':
+    case "right":
       position.value = { x: swipeDistance, y: 0 };
       rotation.value = 30;
       break;
-    case 'up':
+    case "up":
       position.value = { x: 0, y: -swipeDistance };
       rotation.value = 0;
       break;
-    case 'down':
+    case "down":
       position.value = { x: 0, y: swipeDistance };
       rotation.value = 0;
       break;
@@ -156,14 +164,20 @@ const swipeCard = (direction: 'left' | 'right' | 'up' | 'down') => {
 };
 </script>
 
-<style scoped>
+<style>
+html,
+body {
+  max-width: 100vw;
+  max-height: 100vh;
+  overflow: hidden;
+}
 .page-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100vh;
-  width: 100dvw;
+  height: 100%;
+  width: 100%;
   overflow: hidden;
   background-color: #f4f4f9;
   font-family: Arial, sans-serif;
