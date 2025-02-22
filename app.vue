@@ -1,38 +1,37 @@
 <template>
   <div class="page-container">
-    <h1>Свайпни или тапни карточку</h1>
+    <h1>Перетаскивай карточку</h1>
 
-    <!-- Контейнер для свайпабельных карточек с анимацией -->
-    <div class="swipe-container">
-      <transition
-        name="card-swipe"
-        @before-enter="beforeEnter"
-        @enter="enter"
-        @leave="leave"
+    <div class="card-stack">
+      <!-- Следующие карточки на фоне -->
+      <div
+        v-for="(card, index) in cards.slice(1)"
+        :key="card.title"
+        class="card-back"
+        :style="{ transform: `scale(${0.9 - index * 0.05}) translateY(${index * 10}px)` }"
+      ></div>
+
+      <!-- Основная активная карточка -->
+      <div
+        class="swipe-card"
+        ref="card"
+        :style="{
+          transform: `translate(${position.x}px, ${position.y}px) rotate(${rotation}deg)`,
+          backgroundColor: cardColor,
+        }"
+        @touchstart="startDrag"
+        @touchmove="drag"
+        @touchend="endDrag"
+        v-touch:swipe.left="() => swipeCard('left')"
+        v-touch:swipe.right="() => swipeCard('right')"
+        v-touch:swipe.up="() => swipeCard('up')"
+        v-touch:swipe.down="() => swipeCard('down')"
       >
-        <!-- Показываем только текущую карточку -->
-        <div
-          class="swipe-card"
-          :key="currentIndex"
-          v-touch:swipe.left="swipeLeftHandler"
-          v-touch:swipe.right="swipeRightHandler"
-          v-touch:tap="tapHandler"
-          v-touch:longtap="longTapHandler"
-          v-touch:press="pressHandler"
-          v-touch:release="releaseHandler"
-          v-touch:drag="dragHandler"
-        >
-          <div class="card-content">
-            <h3>{{ cards[currentIndex].title }}</h3>
-            <p>{{ cards[currentIndex].description }}</p>
-          </div>
+        <div class="card-content">
+          <h3>{{ cards[0].title }}</h3>
+          <p>{{ cards[0].description }}</p>
         </div>
-      </transition>
-    </div>
-
-    <!-- Сообщение о последнем действии -->
-    <div v-if="lastGesture" class="gesture-info">
-      <p>Последний жест: {{ lastGesture }}</p>
+      </div>
     </div>
   </div>
 </template>
@@ -40,75 +39,120 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-// Хранение информации о последнем действии и текущем индексе карточки
-const lastGesture = ref<string>('');
-const currentIndex = ref<number>(0);
-const cards = ref<{ title: string; description: string }[]>([
-  { title: 'Карточка 1', description: 'Описание карточки 1' },
-  { title: 'Карточка 2', description: 'Описание карточки 2' },
-  { title: 'Карточка 3', description: 'Описание карточки 3' },
+const card = ref<HTMLElement | null>(null);
+const startPos = ref({ x: 0, y: 0 });
+const position = ref({ x: 0, y: 0 });
+const rotation = ref(0);
+const isDragging = ref(false);
+
+const cards = ref([
+  { title: 'Карточка 1', description: 'Описание 1' },
+  { title: 'Карточка 2', description: 'Описание 2' },
+  { title: 'Карточка 3', description: 'Описание 3' },
 ]);
 
-// Обработчик свайпа влево
-const swipeLeftHandler = () => {
-  lastGesture.value = 'Свайп влево';
-  if (currentIndex.value < cards.value.length - 1) {
-    currentIndex.value++;
+const startDrag = (event: TouchEvent) => {
+  isDragging.value = true;
+  const touch = event.touches[0];
+  startPos.value = { x: touch.clientX - position.value.x, y: touch.clientY - position.value.y };
+};
+
+const drag = (event: TouchEvent) => {
+  if (!isDragging.value) return;
+  const touch = event.touches[0];
+  position.value = { x: touch.clientX - startPos.value.x, y: touch.clientY - startPos.value.y };
+  rotation.value = position.value.x * 0.05;
+  updateCardColor();
+};
+
+const endDrag = () => {
+  isDragging.value = false;
+  const screenWidth = window.innerWidth;
+  const screenHeight = window.innerHeight;
+  const distX = Math.abs(position.value.x);
+  const distY = Math.abs(position.value.y);
+
+  if (distX < screenWidth * 0.1 && distY < screenHeight * 0.1) {
+    resetCard();
+  } else {
+    animateCardOut();
   }
 };
 
-// Обработчик свайпа вправо
-const swipeRightHandler = () => {
-  lastGesture.value = 'Свайп вправо';
-  if (currentIndex.value > 0) {
-    currentIndex.value--;
+const resetCard = () => {
+  position.value = { x: 0, y: 0 };
+  rotation.value = 0;
+  updateCardColor();
+};
+
+const animateCardOut = () => {
+  const screenWidth = window.innerWidth;
+  const screenHeight = window.innerHeight;
+  const threshold = 100;
+
+  let newX = position.value.x;
+  let newY = position.value.y;
+
+  if (position.value.x > screenWidth / 2 - threshold) newX = screenWidth;
+  if (position.value.x < -screenWidth / 2 + threshold) newX = -screenWidth;
+  if (position.value.y > screenHeight / 2 - threshold) newY = screenHeight;
+  if (position.value.y < -screenHeight / 2 + threshold) newY = -screenHeight;
+
+  position.value = { x: newX, y: newY };
+  rotation.value = newX > 0 ? 30 : -30;
+
+  setTimeout(() => {
+    removeCard();
+  }, 300);
+};
+
+const removeCard = () => {
+  cards.value.push(cards.value.shift()!);
+  resetCard();
+};
+
+const updateCardColor = () => {
+  const screenWidth = window.innerWidth;
+  const screenHeight = window.innerHeight;
+  const xRatio = Math.abs(position.value.x) / (screenWidth / 2);
+  const yRatio = Math.abs(position.value.y) / (screenHeight / 2);
+
+  let red = Math.min(255, Math.floor(255 * xRatio));
+  let blue = Math.min(255, Math.floor(255 * yRatio));
+
+  cardColor.value = `rgb(${red}, ${255 - red}, ${blue})`;
+};
+
+const cardColor = ref('rgb(52, 152, 219)');
+
+// Функция обработки свайпа
+const swipeCard = (direction: 'left' | 'right' | 'up' | 'down') => {
+  const screenWidth = window.innerWidth;
+  const screenHeight = window.innerHeight;
+  const swipeDistance = 300; // Насколько далеко улетает карточка
+
+  switch (direction) {
+    case 'left':
+      position.value = { x: -swipeDistance, y: 0 };
+      rotation.value = -30;
+      break;
+    case 'right':
+      position.value = { x: swipeDistance, y: 0 };
+      rotation.value = 30;
+      break;
+    case 'up':
+      position.value = { x: 0, y: -swipeDistance };
+      rotation.value = 0;
+      break;
+    case 'down':
+      position.value = { x: 0, y: swipeDistance };
+      rotation.value = 0;
+      break;
   }
-};
 
-// Обработчик тапов
-const tapHandler = () => {
-  lastGesture.value = 'Тап';
-};
-
-// Обработчик долгого тапа
-const longTapHandler = () => {
-  lastGesture.value = 'Долгий тап';
-};
-
-// Обработчик начала нажатия (press)
-const pressHandler = () => {
-  lastGesture.value = 'Нажатие';
-};
-
-// Обработчик отпускания (release)
-const releaseHandler = () => {
-  lastGesture.value = 'Отпускание';
-};
-
-// Обработчик перетаскивания (drag)
-const dragHandler = () => {
-  lastGesture.value = 'Перетаскивание';
-};
-
-// Анимация появления
-const beforeEnter = (el: HTMLElement) => {
-  el.style.transform = 'translateX(100%)'; // Изначальное положение за пределами экрана
-  el.style.transition = 'none'; // Без анимации перед анимацией входа
-};
-
-// Анимация перемещения
-const enter = (el: HTMLElement, done: () => void) => {
-  el.offsetHeight; // Принудительное перерисовывание
-  el.style.transition = 'transform 0.5s ease-out'; // Плавное движение
-  el.style.transform = 'translateX(0)';
-  done();
-};
-
-// Анимация исчезновения
-const leave = (el: HTMLElement, done: () => void) => {
-  el.style.transition = 'transform 0.5s ease-in'; // Плавный исход
-  el.style.transform = 'translateX(-100%)'; // Сдвигаем карточку за экран
-  done();
+  setTimeout(() => {
+    removeCard();
+  }, 300);
 };
 </script>
 
@@ -119,28 +163,29 @@ const leave = (el: HTMLElement, done: () => void) => {
   align-items: center;
   justify-content: center;
   height: 100vh;
-  padding: 20px;
-  box-sizing: border-box;
+  width: 100dvw;
+  overflow: hidden;
   background-color: #f4f4f9;
   font-family: Arial, sans-serif;
 }
 
-.swipe-container {
-  width: 100%;
-  max-width: 400px;
-  height: 300px;
-  overflow: hidden;
+.card-stack {
   position: relative;
+  width: 300px;
+  height: 400px;
+}
+
+.card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: #ddd;
+  border-radius: 10px;
 }
 
 .swipe-card {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
   width: 100%;
-  max-width: 400px;
   height: 100%;
   background-color: #3498db;
   color: white;
@@ -149,38 +194,10 @@ const leave = (el: HTMLElement, done: () => void) => {
   align-items: center;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.5s ease, opacity 0.5s ease;
-  opacity: 0.9;
+  transition: transform 0.3s ease-out;
 }
 
 .card-content {
   text-align: center;
-}
-
-.gesture-info {
-  margin-top: 20px;
-  font-size: 16px;
-  color: #333;
-}
-
-@media (max-width: 600px) {
-  .swipe-container {
-    height: 70%;
-  }
-  .swipe-card {
-    max-width: 90%;
-    height: 180px;
-  }
-}
-
-/* Плавные переходы для карт */
-.card-swipe-enter-active,
-.card-swipe-leave-active {
-  transition: transform 0.5s ease-out;
-}
-
-.card-swipe-enter, .card-swipe-leave-to /* .card-swipe-leave-active in <2.1.8 */ {
-  transform: translateX(100%);
-  opacity: 0;
 }
 </style>
