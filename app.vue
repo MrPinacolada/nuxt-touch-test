@@ -14,15 +14,14 @@
       ></div>
 
       <!-- Основная активная карточка -->
-      <transition name="fade">
+      <transition name="fade" @after-leave="removeCard">
         <div
-          v-if="activeCard"
+          v-if="activeCard && !isRemoving"
           class="swipe-card"
           ref="card"
           :style="{
             transform: `translate(${position.x}px, ${position.y}px) rotate(${rotation}deg)`,
             backgroundColor: cardColor,
-            opacity: isRemoving ? 0 : 1,
           }"
           @touchstart="startDrag"
           @touchmove="drag"
@@ -107,34 +106,41 @@ const animateCardOut = (
 
   isRemoving.value = true;
 
+  // Направления для анимации
   switch (direction) {
     case "left":
-      position.value = { x: -swipeDistance, y: 0 };
+      position.value = { x: -swipeDistance, y: 0 }; // Улетает влево
       rotation.value = -30;
       break;
     case "right":
-      position.value = { x: swipeDistance, y: 0 };
+      position.value = { x: swipeDistance, y: 0 }; // Улетает вправо
       rotation.value = 30;
       break;
     case "up":
-      position.value = { x: 0, y: -swipeDistance };
+      position.value = { x: 0, y: -swipeDistance }; // Улетает вверх
       rotation.value = 0;
       break;
     case "down":
-      position.value = { x: 0, y: swipeDistance };
+      position.value = { x: 0, y: swipeDistance }; // Улетает вниз
       rotation.value = 0;
       break;
   }
 
+  // Карточка пропадает через 300 мс (время анимации)
   setTimeout(() => {
-    removeCard();
+    isRemoving.value = false;
   }, 300);
 };
 
 const removeCard = () => {
-  cards.value.push(cards.value.shift()!);
-  isRemoving.value = false;
+  cards.value.shift(); // Удаляем старую карточку
   resetCard();
+
+  // Добавляем новую карточку перед жестами
+  cards.value.push({
+    title: `Новая карточка ${cards.value.length + 1}`,
+    description: "Описание новой карточки",
+  });
 };
 
 const swipeCard = (direction: "left" | "right" | "up" | "down") => {
@@ -197,6 +203,9 @@ body {
 .fade-enter-active {
   animation: fadeIn 0.3s ease-out;
 }
+.fade-leave-active {
+  animation: fadeOut 0.3s ease-out;
+}
 
 @keyframes fadeIn {
   from {
@@ -206,6 +215,13 @@ body {
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+    transform: translate(100vw, 0); /* Двигаем в сторону */
   }
 }
 </style>
