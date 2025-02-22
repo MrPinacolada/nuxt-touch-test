@@ -1,7 +1,7 @@
 <template>
   <div class="page-container">
     <h1>Перетаскивай карточку</h1>
-
+    {{ position }}
     <div class="card-stack">
       <!-- Следующие карточки на фоне -->
       <div
@@ -21,7 +21,7 @@
           ref="card"
           :style="{
             transform: `translate(${position.x}px, ${position.y}px) rotate(${rotation}deg)`,
-            backgroundColor: cardColor,
+            // backgroundColor: cardColor,
           }"
           @touchstart="startDrag"
           @touchmove="drag"
@@ -42,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick } from "vue";
+import { ref, computed } from "vue";
 
 const card = ref<HTMLElement | null>(null);
 const startPos = ref({ x: 0, y: 0 });
@@ -75,8 +75,33 @@ const drag = (event: TouchEvent) => {
     x: touch.clientX - startPos.value.x,
     y: touch.clientY - startPos.value.y,
   };
+
+  // Вычисляем угол наклона
   rotation.value = position.value.x * 0.05;
+
+  // Вычисление цвета в зависимости от положения карточки
+  const screenWidth = window.innerWidth;
+  const screenHeight = window.innerHeight;
+
+  // Для горизонтальной оси: чем дальше от центра, тем более насыщенный цвет
+  const normalizedX = Math.min(Math.max(position.value.x / (screenWidth / 2), -1), 1);  // от -1 до 1
+  const normalizedY = Math.min(Math.max(position.value.y / (screenHeight / 2), -1), 1);  // от -1 до 1
+
+  // Рассчитываем цвет на основе позиции карточки (можно использовать любой цвет)
+  const red = Math.floor(255 * (normalizedX > 0 ? normalizedX : 0));  // Красный цвет зависит от положения по X
+  const green = Math.floor(255 * (normalizedX < 0 ? -normalizedX : 0));  // Зеленый цвет зависит от положения по X
+  const blue = Math.floor(255 * (Math.abs(normalizedY)));  // Синий цвет зависит от положения по Y
+
+  // Формируем цвет в формате rgb
+  const cardColor = `rgb(${red}, ${green}, ${blue})`;
+
+  // Применяем цвет и трансформацию
+  const cardElement = card.value;
+  if (cardElement) {
+    cardElement.style.backgroundColor = cardColor;
+  }
 };
+
 
 const endDrag = () => {
   isDragging.value = false;
@@ -85,10 +110,18 @@ const endDrag = () => {
   const distX = Math.abs(position.value.x);
   const distY = Math.abs(position.value.y);
 
+  let direction: "left" | "right" | "up" | "down" = "right";
+
   if (distX < screenWidth * 0.2 && distY < screenHeight * 0.2) {
     resetCard();
   } else {
-    animateCardOut();
+    if (distX > distY) {
+      direction = position.value.x > 0 ? "right" : "left";
+    } else {
+      direction = position.value.y > 0 ? "down" : "up";
+    }
+
+    animateCardOut(direction);
   }
 };
 
@@ -97,57 +130,62 @@ const resetCard = () => {
   rotation.value = 0;
 };
 
-const animateCardOut = (
-  direction: "left" | "right" | "up" | "down" = "right"
-) => {
+const animateCardOut = (direction: "left" | "right" | "up" | "down" = "right") => {
   const screenWidth = window.innerWidth;
   const screenHeight = window.innerHeight;
-  const swipeDistance = Math.max(screenWidth, screenHeight) * 1.2; // Улетает за экран
-
+  const swipeDistance = Math.max(screenWidth, screenHeight) * 1.2;
   isRemoving.value = true;
 
-  // Направления для анимации
+  let swipeX = 0;
+  let swipeY = 0;
+  let rotationValue = 0;
+
   switch (direction) {
     case "left":
-      position.value = { x: -swipeDistance, y: 0 }; // Улетает влево
-      rotation.value = -30;
+      swipeX = -swipeDistance;
+      rotationValue = -30;
       break;
     case "right":
-      position.value = { x: swipeDistance, y: 0 }; // Улетает вправо
-      rotation.value = 30;
+      swipeX = swipeDistance;
+      rotationValue = 30;
       break;
     case "up":
-      position.value = { x: 0, y: -swipeDistance }; // Улетает вверх
-      rotation.value = 0;
+      swipeY = -swipeDistance;
       break;
     case "down":
-      position.value = { x: 0, y: swipeDistance }; // Улетает вниз
-      rotation.value = 0;
+      swipeY = swipeDistance;
       break;
   }
 
-  // Карточка пропадает через 300 мс (время анимации)
+  position.value = { x: swipeX, y: swipeY };
+  rotation.value = rotationValue;
+
+  const cardElement = card.value;
+  if (cardElement) {
+    cardElement.style.setProperty('--swipe-x', `${swipeX}px`);
+    cardElement.style.setProperty('--swipe-y', `${swipeY}px`);
+  }
+
   setTimeout(() => {
     isRemoving.value = false;
   }, 300);
 };
 
-const removeCard = () => {
-  cards.value.shift(); // Удаляем старую карточку
-  resetCard();
 
-  // Добавляем новую карточку перед жестами
+const removeCard = () => {
+  cards.value.shift();
+  resetCard();
   cards.value.push({
     title: `Новая карточка ${cards.value.length + 1}`,
     description: "Описание новой карточки",
   });
+
 };
 
 const swipeCard = (direction: "left" | "right" | "up" | "down") => {
   animateCardOut(direction);
 };
 </script>
-
 <style>
 html,
 body {
@@ -193,7 +231,7 @@ body {
   align-items: center;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+  transition: transform 0.5s ease-out, opacity 0.3s ease-out;
 }
 
 .card-content {
@@ -201,10 +239,10 @@ body {
 }
 
 .fade-enter-active {
-  animation: fadeIn 0.3s ease-out;
+  animation: fadeIn 0.5s ease-out;
 }
 .fade-leave-active {
-  animation: fadeOut 0.3s ease-out;
+  animation: fadeOut 0.5s ease-out;
 }
 
 @keyframes fadeIn {
@@ -221,7 +259,8 @@ body {
 @keyframes fadeOut {
   to {
     opacity: 0;
-    transform: translate(100vw, 0); /* Двигаем в сторону */
+    transform: translateX(var(--swipe-x, 0)) translateY(var(--swipe-y, 0)); 
   }
 }
+
 </style>
