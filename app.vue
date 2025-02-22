@@ -1,7 +1,5 @@
 <template>
   <div class="page-container">
-    <h1>Перетаскивай карточку</h1>
-    {{ position }}
     <div class="card-stack">
       <!-- Следующие карточки на фоне -->
       <div
@@ -133,7 +131,7 @@ const resetCard = () => {
 const animateCardOut = (direction: "left" | "right" | "up" | "down" = "right") => {
   const screenWidth = window.innerWidth;
   const screenHeight = window.innerHeight;
-  const swipeDistance = Math.max(screenWidth, screenHeight) * 1.2;
+  const swipeDistance = Math.max(screenWidth, screenHeight) * 0.3;
   isRemoving.value = true;
 
   let swipeX = 0;
