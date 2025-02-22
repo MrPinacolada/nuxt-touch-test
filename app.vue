@@ -8,7 +8,9 @@
         v-for="(card, index) in cards.slice(1)"
         :key="card.title"
         class="card-back"
-        :style="{ transform: `scale(${0.9 - index * 0.05}) translateY(${index * 10}px)` }"
+        :style="{
+          transform: `scale(${0.9 - index * 0.05}) translateY(${index * 10}px)`,
+        }"
       ></div>
 
       <!-- Основная активная карточка -->
@@ -41,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue';
+import { ref, computed, nextTick } from "vue";
 
 const card = ref<HTMLElement | null>(null);
 const startPos = ref({ x: 0, y: 0 });
@@ -51,9 +53,9 @@ const isDragging = ref(false);
 const isRemoving = ref(false);
 
 const cards = ref([
-  { title: 'Карточка 1', description: 'Описание 1' },
-  { title: 'Карточка 2', description: 'Описание 2' },
-  { title: 'Карточка 3', description: 'Описание 3' },
+  { title: "Карточка 1", description: "Описание 1" },
+  { title: "Карточка 2", description: "Описание 2" },
+  { title: "Карточка 3", description: "Описание 3" },
 ]);
 
 const activeCard = computed(() => cards.value[0]);
@@ -61,13 +63,19 @@ const activeCard = computed(() => cards.value[0]);
 const startDrag = (event: TouchEvent) => {
   isDragging.value = true;
   const touch = event.touches[0];
-  startPos.value = { x: touch.clientX - position.value.x, y: touch.clientY - position.value.y };
+  startPos.value = {
+    x: touch.clientX - position.value.x,
+    y: touch.clientY - position.value.y,
+  };
 };
 
 const drag = (event: TouchEvent) => {
   if (!isDragging.value) return;
   const touch = event.touches[0];
-  position.value = { x: touch.clientX - startPos.value.x, y: touch.clientY - startPos.value.y };
+  position.value = {
+    x: touch.clientX - startPos.value.x,
+    y: touch.clientY - startPos.value.y,
+  };
   rotation.value = position.value.x * 0.05;
 };
 
@@ -90,7 +98,9 @@ const resetCard = () => {
   rotation.value = 0;
 };
 
-const animateCardOut = (direction: 'left' | 'right' | 'up' | 'down' = 'right') => {
+const animateCardOut = (
+  direction: "left" | "right" | "up" | "down" = "right"
+) => {
   const screenWidth = window.innerWidth;
   const screenHeight = window.innerHeight;
   const swipeDistance = Math.max(screenWidth, screenHeight) * 1.2; // Улетает за экран
@@ -98,19 +108,19 @@ const animateCardOut = (direction: 'left' | 'right' | 'up' | 'down' = 'right') =
   isRemoving.value = true;
 
   switch (direction) {
-    case 'left':
+    case "left":
       position.value = { x: -swipeDistance, y: 0 };
       rotation.value = -30;
       break;
-    case 'right':
+    case "right":
       position.value = { x: swipeDistance, y: 0 };
       rotation.value = 30;
       break;
-    case 'up':
+    case "up":
       position.value = { x: 0, y: -swipeDistance };
       rotation.value = 0;
       break;
-    case 'down':
+    case "down":
       position.value = { x: 0, y: swipeDistance };
       rotation.value = 0;
       break;
@@ -127,12 +137,19 @@ const removeCard = () => {
   resetCard();
 };
 
-const swipeCard = (direction: 'left' | 'right' | 'up' | 'down') => {
+const swipeCard = (direction: "left" | "right" | "up" | "down") => {
   animateCardOut(direction);
 };
 </script>
 
-<style scoped>
+<style>
+html,
+body {
+  overscroll-behavior: none;
+  touch-action: none;
+  overflow: hidden;
+  height: 100%;
+}
 .page-container {
   display: flex;
   flex-direction: column;
