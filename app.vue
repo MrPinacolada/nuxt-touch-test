@@ -131,7 +131,7 @@ const resetCard = () => {
 const animateCardOut = (direction: "left" | "right" | "up" | "down" = "right") => {
   const screenWidth = window.innerWidth;
   const screenHeight = window.innerHeight;
-  const swipeDistance = Math.max(screenWidth, screenHeight) * 0.3;
+  const swipeDistance = Math.max(screenWidth, screenHeight) * 0.8;
   isRemoving.value = true;
 
   let swipeX = 0;
@@ -156,7 +156,7 @@ const animateCardOut = (direction: "left" | "right" | "up" | "down" = "right") =
   }
 
   position.value = { x: swipeX, y: swipeY };
-  rotation.value = rotationValue;
+  // rotation.value = rotationValue;
 
   const cardElement = card.value;
   if (cardElement) {
